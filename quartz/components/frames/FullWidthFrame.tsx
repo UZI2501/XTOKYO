@@ -1,7 +1,9 @@
 import { PageFrame, PageFrameProps } from "./types"
 import HeaderConstructor from "../Header"
+import CommentsConstructor from "../Comments"
 
 const Header = HeaderConstructor()
+const Comments = CommentsConstructor()
 
 /**
  * Full-width page frame — no sidebars. The center content area spans the
@@ -42,6 +44,7 @@ export const FullWidthFrame: PageFrame = {
             {afterBody.map((BodyComponent) => (
               <BodyComponent {...componentData} />
             ))}
+            <Comments {...componentData} />
           </div>
         </div>
         <Footer {...componentData} />
