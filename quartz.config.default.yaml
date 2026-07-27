@@ -13,7 +13,10 @@ configuration:
     - templates
     - .obsidian
     - raw
-    - log
+    - log.md
+    - CLAUDE.md
+    - AGENTS.md
+    - deliverables
   theme:
     fontOrigin: googleFonts
     cdnCaching: true

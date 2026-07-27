@@ -92,3 +92,30 @@
   }
 }
 
+// ============================================================
+// wikiフォルダをルートに1階層格上げるCSSハック
+// ============================================================
+#explorer {
+  // wikiフォルダのボタンを非表示
+  li.folder-node[data-folderpath="wiki"] > button,
+  li.folder-node[data-name="wiki"] > button {
+    display: none !important;
+  }
+  // wikiフォルダの中身を常に展開
+  li.folder-node[data-folderpath="wiki"] > .folder-outer,
+  li.folder-node[data-name="wiki"] > .folder-outer {
+    max-height: none !important;
+    display: block !important;
+  }
+  // インデントと左ボーダーをなくす
+  li.folder-node[data-folderpath="wiki"] > .folder-outer > ul,
+  li.folder-node[data-name="wiki"] > .folder-outer > ul {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    border-left: none !important;
+  }
+  // トップレベルにあるその他のファイルを隠す (保険)
+  > .folder-outer > ul > li.file-node {
+    display: none !important;
+  }
+}
