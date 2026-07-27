@@ -17,6 +17,7 @@ configuration:
     - CLAUDE.md
     - AGENTS.md
     - deliverables
+    - wiki/deliverables
   theme:
     fontOrigin: googleFonts
     cdnCaching: true
