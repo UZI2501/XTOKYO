@@ -1,3 +1,94 @@
 @use "./variables.scss" as *;
 
-// put your custom CSS here!
+// ============================================================
+// XTOKYO Wiki — サイドバーカスタムスタイル
+// ============================================================
+
+// --- ページタイトル (左サイドバー上部) ---
+#page-title a {
+  font-family: var(--headerFont);
+  font-weight: 900;
+  font-size: 1.3rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, #e50914 0%, #ff6b35 60%, #ff9500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-decoration: none !important;
+  transition: opacity 0.2s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+// --- エクスプローラー (サイドバー) ---
+#explorer {
+  // フォルダタイトル (「📖 コンテンツ」ラベル)
+  .explorer-title {
+    font-family: var(--headerFont);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 0.5rem;
+  }
+
+  // フォルダ名
+  button.folder-button {
+    font-weight: 600;
+    color: var(--dark);
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: #e50914;
+    }
+  }
+
+  // ファイルリンク
+  a.internal {
+    font-size: 0.875rem;
+    color: var(--darkgray);
+    transition: color 0.15s ease, padding-left 0.15s ease;
+    border-radius: 4px;
+    padding: 2px 6px;
+
+    &:hover {
+      color: #e50914;
+      background: color-mix(in srgb, #e50914 8%, transparent);
+      text-decoration: none;
+    }
+
+    // アクティブページ
+    &.active {
+      color: #e50914;
+      font-weight: 600;
+      background: color-mix(in srgb, #e50914 12%, transparent);
+    }
+  }
+
+  // フォルダ区切り線
+  .folder-outer > ul {
+    border-left: 2px solid color-mix(in srgb, #e50914 25%, var(--lightgray));
+    margin-left: 0.6rem;
+    padding-left: 0.6rem;
+  }
+}
+
+// --- 左サイドバー全体 ---
+.left.sidebar {
+  // スクロールバーを細くする
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: var(--lightgray);
+    border-radius: 4px;
+  }
+}
+
