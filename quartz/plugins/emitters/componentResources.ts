@@ -128,7 +128,12 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
   margin-top: 0.5rem;
 }
 .cusdis-form {
-  margin-top: 1rem;
+  margin-top: 1.5rem;
+}
+.cusdis-form-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
 }
 .cusdis-input {
   width: 100%;
@@ -141,6 +146,9 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
   background: var(--light);
   color: var(--dark);
   box-sizing: border-box;
+}
+.cusdis-input-half {
+  width: 50%;
 }
 .cusdis-input:focus {
   outline: none;
@@ -186,14 +194,6 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
 (function () {
   var CUSDIS_HOST = 'https://cusdis.com';
 
-  function formatDate(dateStr) {
-    var d = new Date(dateStr);
-    var y = d.getFullYear();
-    var m = String(d.getMonth() + 1).padStart(2, '0');
-    var day = String(d.getDate()).padStart(2, '0');
-    return y + '/' + m + '/' + day;
-  }
-
   function escapeHtml(str) {
     var div = document.createElement('div');
     div.appendChild(document.createTextNode(str));
@@ -203,21 +203,17 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
   function renderComment(comment) {
     var el = document.createElement('div');
     el.className = 'cusdis-comment';
-    var html = '<div class="cusdis-comment-meta">';
-    html += escapeHtml(comment.by || 'Anonymous');
-    html += ' &middot; ' + formatDate(comment.createdAt);
-    html += '</div>';
-    html += '<div class="cusdis-comment-body">' + escapeHtml(comment.content) + '</div>';
+    var nickname = comment.by_nickname || 'Anonymous';
+    el.innerHTML = '<div class="cusdis-comment-meta">' + escapeHtml(nickname) + ' &middot; ' + escapeHtml(comment.parsedCreatedAt || '') + '</div><div class="cusdis-comment-body">' + (comment.parsedContent || escapeHtml(comment.content || '')) + '</div>';
 
-    var replies = comment.replies || comment.children || [];
-    if (replies.length > 0) {
-      html += '<div class="cusdis-comment-replies">';
-      el.innerHTML = html;
+    var replies = comment.replies && comment.replies.data;
+    if (replies && replies.length > 0) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'cusdis-comment-replies';
       replies.forEach(function (reply) {
-        el.querySelector('.cusdis-comment-replies').appendChild(renderComment(reply));
+        wrapper.appendChild(renderComment(reply));
       });
-    } else {
-      el.innerHTML = html;
+      el.appendChild(wrapper);
     }
     return el;
   }
@@ -231,13 +227,13 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
 
     listEl.innerHTML = '<div class="cusdis-loading">読み込み中...</div>';
 
-    fetch(host + '/api/open/comment?appId=' + encodeURIComponent(appId) + '&pageId=' + encodeURIComponent(pageId))
+    fetch(host + '/api/open/comments?appId=' + encodeURIComponent(appId) + '&pageId=' + encodeURIComponent(pageId))
       .then(function (res) {
         if (!res.ok) throw new Error('Network response was not ok');
         return res.json();
       })
-      .then(function (data) {
-        var comments = (data && data.data && data.data.comments) || [];
+      .then(function (resp) {
+        var comments = (resp && resp.data && resp.data.data) || [];
         listEl.innerHTML = '';
         if (comments.length === 0) {
           listEl.innerHTML = '<div class="cusdis-empty">まだコメントはありません</div>';
@@ -262,7 +258,9 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
     var pageUrl = container.getAttribute('data-page-url');
     var pageTitle = container.getAttribute('data-page-title');
     var form = container.querySelector('.cusdis-form');
-    var input = container.querySelector('.cusdis-input');
+    var nicknameInput = form ? form.querySelector('input[name="nickname"]') : null;
+    var emailInput = form ? form.querySelector('input[name="email"]') : null;
+    var contentInput = form ? form.querySelector('textarea[name="content"]') : null;
     var status = container.querySelector('.cusdis-status');
     var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
@@ -271,30 +269,37 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
     if (form) {
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        var content = input.value.trim();
-        if (!content) return;
+        var nickname = nicknameInput ? nicknameInput.value.trim() : '';
+        var content = contentInput ? contentInput.value.trim() : '';
+        if (!nickname) { alert('ニックネームを入力してください'); return; }
+        if (!content) { alert('コメントを入力してください'); return; }
 
         submitBtn.disabled = true;
         status.textContent = '送信中...';
         status.className = 'cusdis-status';
 
-        fetch(host + '/api/open/comment', {
+        var body = {
+          appId: appId,
+          pageId: pageId,
+          pageUrl: pageUrl,
+          pageTitle: pageTitle,
+          content: content,
+          nickname: nickname,
+        };
+        var email = emailInput ? emailInput.value.trim() : '';
+        if (email) body.email = email;
+
+        fetch(host + '/api/open/comments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            appId: appId,
-            pageId: pageId,
-            pageUrl: pageUrl,
-            pageTitle: pageTitle,
-            content: content,
-          }),
+          body: JSON.stringify(body),
         })
           .then(function (res) {
             if (!res.ok) throw new Error('Submit failed');
             return res.json();
           })
           .then(function () {
-            input.value = '';
+            if (contentInput) contentInput.value = '';
             status.textContent = 'コメントを送信しました（承認後に表示されます）';
             status.className = 'cusdis-status cusdis-success';
             setTimeout(function () { status.textContent = ''; }, 4000);

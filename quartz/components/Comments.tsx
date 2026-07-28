@@ -23,8 +23,13 @@ const Comments: QuartzComponent = ({ fileData, displayClass }) => {
             >
                 <div class="cusdis-list"></div>
                 <form class="cusdis-form">
+                    <div class="cusdis-form-row">
+                        <input class="cusdis-input cusdis-input-half" type="text" name="nickname" placeholder="ニックネーム" required />
+                        <input class="cusdis-input cusdis-input-half" type="email" name="email" placeholder="メールアドレス（任意）" />
+                    </div>
                     <textarea
                         class="cusdis-input"
+                        name="content"
                         placeholder="コメントを入力..."
                         rows={4}
                         required
