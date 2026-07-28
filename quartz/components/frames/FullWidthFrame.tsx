@@ -39,12 +39,12 @@ export const FullWidthFrame: PageFrame = {
             </div>
           </div>
           <Content {...componentData} />
+          <Comments {...componentData} />
           <hr />
           <div class="page-footer">
             {afterBody.map((BodyComponent) => (
               <BodyComponent {...componentData} />
             ))}
-            <Comments {...componentData} />
           </div>
         </div>
         <Footer {...componentData} />

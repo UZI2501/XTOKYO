@@ -44,12 +44,12 @@ export const DefaultFrame: PageFrame = {
             </div>
           </div>
           <Content {...componentData} />
+          <Comments {...componentData} />
           <hr />
           <div class="page-footer">
             {afterBody.map((BodyComponent) => (
               <BodyComponent {...componentData} />
             ))}
-            <Comments {...componentData} />
           </div>
         </div>
         <div class="right sidebar">
