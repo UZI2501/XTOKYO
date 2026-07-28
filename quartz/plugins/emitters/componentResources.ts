@@ -90,6 +90,247 @@ function addGlobalPageResources(ctx: BuildCtx, componentResources: ComponentReso
     componentResources.css.push(popoverStyle)
   }
 
+  // comments (native Cusdis integration)
+  componentResources.css.push(`
+.comments .cusdis-list {
+  margin-bottom: 1.5rem;
+}
+.cusdis-loading, .cusdis-error {
+  padding: 1rem;
+  color: var(--darkgray);
+  font-size: 0.9rem;
+}
+.cusdis-empty {
+  padding: 1rem;
+  color: var(--gray);
+  font-size: 0.9rem;
+}
+.cusdis-comment {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--lightgray);
+}
+.cusdis-comment:last-child {
+  border-bottom: none;
+}
+.cusdis-comment-meta {
+  font-size: 0.8rem;
+  color: var(--gray);
+  margin-bottom: 0.4rem;
+}
+.cusdis-comment-body {
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+.cusdis-comment-replies {
+  margin-left: 1.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--lightgray);
+  margin-top: 0.5rem;
+}
+.cusdis-form {
+  margin-top: 1rem;
+}
+.cusdis-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--lightgray);
+  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 0.95rem;
+  resize: vertical;
+  background: var(--light);
+  color: var(--dark);
+  box-sizing: border-box;
+}
+.cusdis-input:focus {
+  outline: none;
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--secondary) 20%, transparent);
+}
+.cusdis-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+.cusdis-form-footer button {
+  padding: 0.5rem 1.5rem;
+  background: var(--secondary);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 0.9rem;
+  transition: opacity 0.15s ease;
+}
+.cusdis-form-footer button:hover {
+  opacity: 0.85;
+}
+.cusdis-form-footer button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.cusdis-status {
+  font-size: 0.85rem;
+  color: var(--gray);
+}
+.cusdis-status.cusdis-success {
+  color: var(--tertiary);
+}
+.cusdis-status.cusdis-fail {
+  color: #e50914;
+}
+`)
+  componentResources.afterDOMLoaded.push(`
+(function () {
+  var CUSDIS_HOST = 'https://cusdis.com';
+
+  function formatDate(dateStr) {
+    var d = new Date(dateStr);
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return y + '/' + m + '/' + day;
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.appendChild(document.createTextNode(str));
+    return div.innerHTML;
+  }
+
+  function renderComment(comment) {
+    var el = document.createElement('div');
+    el.className = 'cusdis-comment';
+    var html = '<div class="cusdis-comment-meta">';
+    html += escapeHtml(comment.by || 'Anonymous');
+    html += ' &middot; ' + formatDate(comment.createdAt);
+    html += '</div>';
+    html += '<div class="cusdis-comment-body">' + escapeHtml(comment.content) + '</div>';
+
+    var replies = comment.replies || comment.children || [];
+    if (replies.length > 0) {
+      html += '<div class="cusdis-comment-replies">';
+      el.innerHTML = html;
+      replies.forEach(function (reply) {
+        el.querySelector('.cusdis-comment-replies').appendChild(renderComment(reply));
+      });
+    } else {
+      el.innerHTML = html;
+    }
+    return el;
+  }
+
+  function fetchComments(container) {
+    var appId = container.getAttribute('data-app-id');
+    var host = container.getAttribute('data-host') || CUSDIS_HOST;
+    var pageId = container.getAttribute('data-page-id');
+    var listEl = container.querySelector('.cusdis-list');
+    if (!listEl) return;
+
+    listEl.innerHTML = '<div class="cusdis-loading">読み込み中...</div>';
+
+    fetch(host + '/api/open/comment?appId=' + encodeURIComponent(appId) + '&pageId=' + encodeURIComponent(pageId))
+      .then(function (res) {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(function (data) {
+        var comments = (data && data.data && data.data.comments) || [];
+        listEl.innerHTML = '';
+        if (comments.length === 0) {
+          listEl.innerHTML = '<div class="cusdis-empty">まだコメントはありません</div>';
+          return;
+        }
+        comments.forEach(function (comment) {
+          listEl.appendChild(renderComment(comment));
+        });
+      })
+      .catch(function () {
+        listEl.innerHTML = '<div class="cusdis-error">コメントの読み込みに失敗しました</div>';
+      });
+  }
+
+  function initContainer(container) {
+    if (container.getAttribute('data-cusdis-init')) return;
+    container.setAttribute('data-cusdis-init', '1');
+
+    var appId = container.getAttribute('data-app-id');
+    var host = container.getAttribute('data-host') || CUSDIS_HOST;
+    var pageId = container.getAttribute('data-page-id');
+    var pageUrl = container.getAttribute('data-page-url');
+    var pageTitle = container.getAttribute('data-page-title');
+    var form = container.querySelector('.cusdis-form');
+    var input = container.querySelector('.cusdis-input');
+    var status = container.querySelector('.cusdis-status');
+    var submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+    fetchComments(container);
+
+    if (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var content = input.value.trim();
+        if (!content) return;
+
+        submitBtn.disabled = true;
+        status.textContent = '送信中...';
+        status.className = 'cusdis-status';
+
+        fetch(host + '/api/open/comment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            appId: appId,
+            pageId: pageId,
+            pageUrl: pageUrl,
+            pageTitle: pageTitle,
+            content: content,
+          }),
+        })
+          .then(function (res) {
+            if (!res.ok) throw new Error('Submit failed');
+            return res.json();
+          })
+          .then(function () {
+            input.value = '';
+            status.textContent = 'コメントを送信しました（承認後に表示されます）';
+            status.className = 'cusdis-status cusdis-success';
+            setTimeout(function () { status.textContent = ''; }, 4000);
+          })
+          .catch(function () {
+            status.textContent = '送信に失敗しました';
+            status.className = 'cusdis-status cusdis-fail';
+          })
+          .finally(function () {
+            submitBtn.disabled = false;
+          });
+      });
+    }
+  }
+
+  function initAll() {
+    var containers = document.querySelectorAll('.cusdis-container[data-app-id]');
+    containers.forEach(initContainer);
+  }
+
+  document.addEventListener('nav', function () {
+    var containers = document.querySelectorAll('.cusdis-container[data-app-id]');
+    containers.forEach(function (c) {
+      c.removeAttribute('data-cusdis-init');
+    });
+    initAll();
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+})()
+`)
+
   if (cfg.analytics?.provider === "google") {
     const tagId = cfg.analytics.tagId
     componentResources.afterDOMLoaded.push(`

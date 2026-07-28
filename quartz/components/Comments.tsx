@@ -1,31 +1,42 @@
-// quartz/components/Comments.tsx
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 
-export default ((() => {
-    const Comments: QuartzComponent = ({ fileData, displayClass }: QuartzComponentProps) => {
-        // indexページ（トップページ）にはコメント欄を出さない設定
-        if (fileData.slug === "index") {
-            return null
-        }
-
-        // STEP 1で取得した自分のapp-idをここに貼り付けます
-        const appId = "7f45d99b-8b20-44b3-a04d-dbd03a8169a9"
-
-        return (
-            <div class={`comments ${displayClass ?? ""}`}>
-                <h2>コメント</h2>
-                <div
-                    id="cusdis_thread"
-                    data-host="https://cusdis.com"
-                    data-app-id={appId}
-                    data-page-id={fileData.slug}
-                    data-page-url={`https://xtokyo-wiki.pages.dev/${fileData.slug}`}
-                    data-page-title={fileData.frontmatter?.title ?? fileData.slug}
-                ></div>
-                <script async defer src="https://cusdis.com/js/cusdis.es.js"></script>
-            </div>
-        )
+const Comments: QuartzComponent = ({ fileData, displayClass }) => {
+    if (fileData.slug === "index") {
+        return null
     }
 
-    return Comments
-}) satisfies QuartzComponentConstructor)
+    const appId = "7f45d99b-8b20-44b3-a04d-dbd03a8169a9"
+    const host = "https://cusdis.com"
+    const pageUrl = `https://xtokyo-wiki.pages.dev/${fileData.slug}`
+    const pageTitle = fileData.frontmatter?.title ?? fileData.slug
+
+    return (
+        <div class={`comments ${displayClass ?? ""}`}>
+            <h2>コメント</h2>
+            <div
+                class="cusdis-container"
+                data-app-id={appId}
+                data-host={host}
+                data-page-id={fileData.slug}
+                data-page-url={pageUrl}
+                data-page-title={pageTitle}
+            >
+                <div class="cusdis-list"></div>
+                <form class="cusdis-form">
+                    <textarea
+                        class="cusdis-input"
+                        placeholder="コメントを入力..."
+                        rows={4}
+                        required
+                    ></textarea>
+                    <div class="cusdis-form-footer">
+                        <span class="cusdis-status"></span>
+                        <button type="submit">送信</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+export default (() => Comments) satisfies QuartzComponentConstructor
